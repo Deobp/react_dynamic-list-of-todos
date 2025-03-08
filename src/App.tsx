@@ -7,34 +7,22 @@ import { TodoList } from './components/TodoList';
 import { TodoFilter } from './components/TodoFilter';
 import { TodoModal } from './components/TodoModal';
 import { Loader } from './components/Loader';
-import { Todo } from './types/Todo';
 import { getTodos } from './api';
+import { Todo } from './types/Todo';
 
 export const App: React.FC = () => {
-  const [todos, setTodos] = useState<Todo[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [originalTodos, setOriginalTodos] = useState<Todo[] | null>(null);
+  const [currentTodos, setCurrentTodos] = useState<Todo[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const [selectedTodo, setSelectedTodo] = useState<Todo | null>(null);
-  const [status, setStatus] = useState<string>('all');
-  const [search, setSearch] = useState<string>('');
 
   useEffect(() => {
-    getTodos()
-      .then(setTodos)
-      .finally(() => setLoading(false));
+    getTodos().then(todos => {
+      setCurrentTodos(todos);
+      setOriginalTodos(todos);
+      setLoading(false);
+    });
   }, []);
-
-  const filteredTodos = todos.filter(todo => {
-    const matchesStatus =
-      status === 'all' ||
-      (status === 'active' && !todo.completed) ||
-      (status === 'completed' && todo.completed);
-
-    const matchesSearch = todo.title
-      .toLowerCase()
-      .includes(search.toLowerCase());
-
-    return matchesStatus && matchesSearch;
-  });
 
   return (
     <>
@@ -45,10 +33,8 @@ export const App: React.FC = () => {
 
             <div className="block">
               <TodoFilter
-                status={status}
-                search={search}
-                onFilterChange={setStatus}
-                onSearchChange={setSearch}
+                todos={originalTodos}
+                setCurrentTodos={setCurrentTodos}
               />
             </div>
 
@@ -57,18 +43,20 @@ export const App: React.FC = () => {
                 <Loader />
               ) : (
                 <TodoList
-                  todos={filteredTodos}
-                  onSelectTodo={setSelectedTodo}
-                  selectedTodoId={selectedTodo?.id ?? null}
+                  todos={currentTodos}
+                  setSelectedTodo={setSelectedTodo}
+                  selectedTodo={selectedTodo}
                 />
               )}
             </div>
           </div>
         </div>
       </div>
-
       {selectedTodo && (
-        <TodoModal todo={selectedTodo} onClose={() => setSelectedTodo(null)} />
+        <TodoModal
+          selectedTodo={selectedTodo}
+          setSelectedTodo={setSelectedTodo}
+        />
       )}
     </>
   );
